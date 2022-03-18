@@ -1,4 +1,4 @@
-# Old Film Scratch Detection
+# Old Film Scratch Detection (WIP)
 
 The main task of the repository is to detect scratches, VHS effects, etc.
 
