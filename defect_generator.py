@@ -6,21 +6,20 @@ import numpy as np
 import skvideo.datasets
 import skvideo.io
 from PIL import Image, ImageFilter
-from tqdm import tqdm
 
 
 class DefectGenerator(object):
-    def __init__(self, image_folder, mask_output_path, image_output_path):
+    def __init__(self, image_folder, mask_output_path, image_output_path, videos_with_defect: list):
         self.video = None
         self.mask_output_path = mask_output_path
         self.image_output_path = image_output_path
         self.image_folder = image_folder
         self.image_datasets = glob.glob(os.path.join(image_folder, '*'))
         self.video_length = 0
+        self.videos_with_defect = videos_with_defect
 
     def load_video(self, path: str):
-        self.video = skvideo.io.vread(path)
-        self.video_length = len(self.video)
+        self.video = skvideo.io.vreader(path)
 
     def select_alpha(self, mask: Image, color=0, return_numpy=False):
         """
@@ -73,19 +72,21 @@ class DefectGenerator(object):
         return np_merged_mask
 
     def run(self):
-        self.video_length = len(self.video)
-
         index_image = 0
-        for image_path in tqdm(self.image_datasets):
-            index = random.randint(0, self.video_length-1)
-            original_image = Image.open(image_path).convert("RGBA")
-            frame = self.video[index]
-            color = random.choices([100, 50, 0], k=1)
-            defect, bit_mask = self.create_masked(frame, original_image, color[0])
-            defect.save(f"{self.image_output_path}/defect_{index_image}.png")
-            bit_mask.save(f"{self.mask_output_path}/mask_{index_image}.png")
-            index_image += 1
-
+        while (index_image < len(self.image_datasets)):
+            for video_path in self.videos_with_defect:
+                print(f"Load Defects: {video_path}")
+                self.load_video(video_path)
+                for image_frame in self.video:
+                    original_image = Image.open(self.image_datasets[index_image]).convert("RGBA")
+                    frame = np.array(image_frame)
+                    color = random.choices([100, 50, 0], k=1)
+                    defect, bit_mask = self.create_masked(frame, original_image, color[0])
+                    defect.save(f"{self.image_output_path}/defect_{index_image}.png")
+                    bit_mask.save(f"{self.mask_output_path}/mask_{index_image}.png")
+                    index_image += 1
+            print("All video defects are ending..")
+            break
         # print("Create dirty images...")
         # for image_path in tqdm(self.image_datasets):
         #     original_image = Image.open(image_path).convert("RGBA")
