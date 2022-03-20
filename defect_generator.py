@@ -2,6 +2,7 @@ import glob
 import os
 import random
 
+import cv2
 import numpy as np
 import skvideo.datasets
 import skvideo.io
@@ -30,11 +31,23 @@ class DefectGenerator(object):
         # mask = np.invert(mask)
         data = np.invert(mask)
         rgb = data[:, :, :3]
-        color = [235, 235, 235]  # Original value value
+        color = [234, 234, 234]  # Original value value
         black = [0, 0, 0, 255]
         mask = np.all(rgb <= color, axis=-1)
         data[mask] = black
-        defect = data
+
+        rgb_image = data[:, :, :3]
+        kernel = np.ones((16, 16), np.uint8)
+        opened = cv2.morphologyEx(rgb_image, cv2.MORPH_OPEN, kernel)
+        bit_mask = np.zeros(data.shape) + [255, 255, 255, 0]
+        mask = np.all(opened <= [10, 10, 10], axis=-1)
+        bit_mask[mask] = black
+        defect = cv2.GaussianBlur(bit_mask, (3, 3), cv2.BORDER_DEFAULT)
+        defect = defect.astype(np.uint8, copy=False)
+
+        new_bit_mask = np.zeros(defect.shape) + [0, 0, 0, 0]
+        mask = np.all(np.invert(defect[:, :, :3]) <= [10, 10, 10], axis=-1)
+        new_bit_mask[mask] = [255, 255, 255, 255]
         #
         # bit_mask = mask
         # bit_mask[bit_mask >= 190] = 255
@@ -45,8 +58,9 @@ class DefectGenerator(object):
         # defect.putalpha(alpha_r)
         # defect = defect.convert("RGBA")
         if return_numpy:
-            return np.invert(defect), np.invert(defect)
-        return Image.fromarray(defect), Image.fromarray(np.invert(defect)).convert("L")
+            return np.invert(defect), np.invert(new_bit_mask.astype(np.uint8, copy=False))
+        return Image.fromarray(defect), Image.fromarray(np.invert(new_bit_mask.astype(np.uint8, copy=False))).convert(
+            "L")
 
     def create_masked(self, image: np.array, original_image: Image, color: int, blur=False) -> (Image, Image):
         mask = Image.fromarray(image).convert("RGBA")
