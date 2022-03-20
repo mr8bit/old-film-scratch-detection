@@ -18,31 +18,39 @@ class DefectGenerator(object):
         self.image_datasets = glob.glob(os.path.join(image_folder, '*'))
         self.video_length = 0
 
-    def load_video(self, path:str):
+    def load_video(self, path: str):
         self.video = skvideo.io.vread(path)
         self.video_length = len(self.video)
 
-    def select_alpha(self, mask: np.array, color=0, return_numpy=False):
+    def select_alpha(self, mask: Image, color=0, return_numpy=False):
         """
             Конвертируем изображение в битовую маску
         :param mask:
         :return:
         """
-        mask = np.invert(mask)
-        bit_mask = mask
-        bit_mask[bit_mask >= 190] = 255
-        bit_mask[bit_mask < 190] = 0
-        defect = Image.fromarray(mask)
-        r = defect.split()
-        alpha_r = r[0].point(lambda p: 255 - p)
-        defect.putalpha(alpha_r)
-        defect = defect.convert("RGBA")
+        # mask = np.invert(mask)
+        data = np.invert(mask)
+        rgb = data[:, :, :3]
+        color = [235, 235, 235]  # Original value value
+        black = [0, 0, 0, 255]
+        mask = np.all(rgb <= color, axis=-1)
+        data[mask] = black
+        defect = data
+        #
+        # bit_mask = mask
+        # bit_mask[bit_mask >= 190] = 255
+        # bit_mask[bit_mask < 190] = 0
+        # defect = Image.fromarray(mask)
+        # r = defect.split()
+        # alpha_r = r[0].point(lambda p: 255 - p)
+        # defect.putalpha(alpha_r)
+        # defect = defect.convert("RGBA")
         if return_numpy:
-            return np.invert(defect), np.invert(bit_mask)
-        return defect, Image.fromarray(np.invert(bit_mask))
+            return np.invert(defect), np.invert(defect)
+        return Image.fromarray(defect), Image.fromarray(np.invert(defect)).convert("L")
 
     def create_masked(self, image: np.array, original_image: Image, color: int, blur=False) -> (Image, Image):
-        mask = Image.fromarray(image).convert("L")
+        mask = Image.fromarray(image).convert("RGBA")
         mask = mask.resize(original_image.size, Image.ANTIALIAS)
         defect, bit_mask = self.select_alpha(mask, color)  # дефект, битовая маска
         if blur:
@@ -55,7 +63,7 @@ class DefectGenerator(object):
         for i in range(defect_count):
             index = random.randint(0, self.video_length)
             frame = self.video[index]
-            mask = Image.fromarray(frame).convert("L")
+            mask = Image.fromarray(frame).convert("RGBA")
             mask = mask.resize(resize, Image.ANTIALIAS)
             defect, bit_mask = self.select_alpha(mask, 0, return_numpy=True)  # дефект, битовая маска
             masks.append(defect)
@@ -69,7 +77,7 @@ class DefectGenerator(object):
 
         index_image = 0
         for image_path in tqdm(self.image_datasets):
-            index = random.randint(0, self.video_length)
+            index = random.randint(0, self.video_length-1)
             original_image = Image.open(image_path).convert("RGBA")
             frame = self.video[index]
             color = random.choices([100, 50, 0], k=1)
@@ -78,13 +86,12 @@ class DefectGenerator(object):
             bit_mask.save(f"{self.mask_output_path}/mask_{index_image}.png")
             index_image += 1
 
-        print("Create dirty images...")
-
-        for image_path in tqdm(self.image_datasets):
-            original_image = Image.open(image_path).convert("RGBA")
-            frame = self.generate_dirty_image(5, original_image.size)
-            color = random.choices([100, 50, 0], k=1)
-            defect, bit_mask = self.create_masked(frame, original_image, color[0])
-            defect.save(f"{self.image_output_path}/defect_dirty_{index_image}.png")
-            bit_mask.save(f"{self.mask_output_path}/mask_dirty_{index_image}.png")
-            index_image += 1
+        # print("Create dirty images...")
+        # for image_path in tqdm(self.image_datasets):
+        #     original_image = Image.open(image_path).convert("RGBA")
+        #     frame = self.generate_dirty_image(5, original_image.size)
+        #     color = random.choices([100, 50, 0], k=1)
+        #     defect, bit_mask = self.create_masked(frame, original_image, color[0])
+        #     defect.save(f"{self.image_output_path}/defect_dirty_{index_image}.png")
+        #     bit_mask.save(f"{self.mask_output_path}/mask_dirty_{index_image}.png")
+        #     index_image += 1
