@@ -8,6 +8,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Разделение видео на файлы')
     parser.add_argument('--video', type=str, help='Видео для разделения на кадры')
     parser.add_argument('--frame', type=int, help='Какой кадр сохранять')
+    parser.add_argument('--prefix', type=str, help='Префикс для сохранения кадров')
     args = parser.parse_args()
 
     print("#" * 30)
@@ -20,5 +21,5 @@ if __name__ == '__main__':
     for frame in tqdm(videogen):
         if index % args.frame == 0:
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            cv2.imwrite(f'./data/images/frame_{index}.jpg', frame)
+            cv2.imwrite(f'./data/images/frame_{args.prefix}_{index}.jpg', frame)
         index += 1

@@ -13,7 +13,7 @@ bash download_data.sh
 Разделение видео на кадры
 
 ```shell
-python split_video_by_frame.py --video data/video_original/film_1.mp4 --frame 5
+python split_video_by_frame.py --video data/video_original/film_1.mp4 --frame 5 --prefix film_one
 ```
 
 Создание набора данных
