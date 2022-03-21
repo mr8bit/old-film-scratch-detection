@@ -10,8 +10,10 @@ if __name__ == '__main__':
     parser.add_argument('--frame', type=int, help='Какой кадр сохранять')
     args = parser.parse_args()
 
+    print("#" * 30)
     print("Видео:", args.video)
     print(f"Сохраняем каждый {args.frame} кадр")
+    print("#" * 30)
 
     videogen = skvideo.io.vreader(args.video)
     index = 0
