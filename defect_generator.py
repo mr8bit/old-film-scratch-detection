@@ -7,6 +7,7 @@ import numpy as np
 import skvideo.datasets
 import skvideo.io
 from PIL import Image, ImageFilter
+from tqdm import tqdm
 
 
 class DefectGenerator(object):
@@ -88,7 +89,7 @@ class DefectGenerator(object):
     def run(self):
         index_image = 0
         while (index_image < len(self.image_datasets)):
-            for video_path in self.videos_with_defect:
+            for video_path in tqdm(self.videos_with_defect):
                 print(f"Load Defects: {video_path}")
                 self.load_video(video_path)
                 for image_frame in self.video:
